@@ -254,6 +254,18 @@ class Model():
         [Xnew, Ynew] = meshgrid(Xnew, Ynew)
         return Xnew, Ynew, Znew
 
+    def AverageU(self, U, size, stride):
+        m, n = U.shape
+        for i in range(0, m - size + 1, stride):
+            for j in range(0, n - size + 1, stride):
+                avg = sum(sum(U[i:i + size, j:j + size])) / (size * size)
+                for ii in range(i, i + size):
+                    for jj in range(j, j + size):
+                        U[ii, jj] = avg
+        return U
+
+
+
     def Plotting_Landscape(self,XMin,XMax,YMin,YMax):
         print('Model object called to Plotting_Landscape')
         print('self.gridNumber:', self.gridNumber)
@@ -271,6 +283,9 @@ class Model():
 
         # smoothing by interpolation, if need uncomment, if not need, comment this line
         # X, Y, U=self.Interpolation_Landscape(xT,yT,U,XMin,XMax,YMin,YMax)
+
+        # smoothing by average U, if need uncomment, if not need, comment this line
+        U=self.AverageU(U,size=4,stride=1)
 
         return X, Y, U
                   
