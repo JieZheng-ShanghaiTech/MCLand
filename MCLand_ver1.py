@@ -50,7 +50,7 @@ from PIL import ImageTk
 
 from matplotlib import cm
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 #from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
@@ -4482,7 +4482,7 @@ class TimeCoursePage(tk.Frame):
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         toolbar.pack(side=tk.TOP, pady=2,padx=5, ipadx=5)
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -4810,7 +4810,7 @@ class InitTimeCoursePage(tk.Frame):
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         toolbar.pack(side=tk.TOP,pady=2,padx=5, ipadx=5)
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -5071,7 +5071,7 @@ class InitTimeCoursePage2(tk.Frame):
         mytoolbar_frame.grid(row=25, column=2)
         
         #self.mycanvas=FigureCanvasTkAgg(self.f,mytoolbar_frame)
-        self.toolbar=NavigationToolbar2TkAgg(self.canvas,mytoolbar_frame)
+        self.toolbar=NavigationToolbar2Tk(self.canvas,mytoolbar_frame)
         self.toolbar.update()
 
         self.toolbar.pack(side=tk.LEFT,fill=tk.X)
@@ -6104,10 +6104,10 @@ class PhasePlane_Page(tk.Frame):
   
         # canvas for drawing phase plane
         canvas3 = FigureCanvasTkAgg(f3, self)
-        canvas3.show()
+        canvas3.draw()
         canvas3.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        toolbar3 = NavigationToolbar2TkAgg(canvas3, self)
+        toolbar3 = NavigationToolbar2Tk(canvas3, self)
         toolbar3.update()
         toolbar3.pack(side=tk.TOP, pady=2,padx=5, ipadx=5)
         canvas3._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -6158,10 +6158,10 @@ class PhasePlane_Page2(tk.Frame):
   
         # canvas for drawing phase plane
         canvas9 = FigureCanvasTkAgg(f9, self)
-        canvas9.show()
+        canvas9.draw()
         canvas9.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH)#, expand=True)
 
-        toolbar9 = NavigationToolbar2TkAgg(canvas9, self)
+        toolbar9 = NavigationToolbar2Tk(canvas9, self)
         toolbar9.update()
         toolbar9.pack(side=tk.TOP, pady=2,padx=5, ipadx=5)
         canvas9._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH)#, expand=True)
@@ -6218,7 +6218,7 @@ class Graph_Page(tk.Frame):
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         toolbar.pack(side=tk.TOP, pady=2,padx=5, ipadx=5)
         canvas._tkcanvas.pack(pady=2,padx=10, ipadx=5, side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -6416,7 +6416,7 @@ class Graph_Page2(tk.Frame):
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
-        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar = NavigationToolbar2Tk(canvas, self)
         toolbar.update()
         toolbar.pack(side=tk.TOP, pady=2,padx=5, ipadx=5)
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)       
