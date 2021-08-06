@@ -76,6 +76,8 @@ import threading
 
 from libsbml import *
 import sys
+from sklearn.decomposition import PCA
+from scipy import interpolate
 
 LARGE_FONT= ("Verdana", 12, "bold")
 NORMAL_FONT = ("Helvetica", 10)
@@ -243,55 +245,33 @@ class Model():
             print('Calculation time for potential values: %8.2f seconds' % calculation_time)
             return self.PositionProb
 
-    def Plotting_Landscape(self):
+    def Interpolation_Landscape(self,xT,yT,U,XMin,XMax,YMin,YMax):
+        f=interpolate.interp2d(xT,yT,U,kind='cubic')
+        alpha=10 # factor
+        Xnew=linspace(XMin,XMax,self.gridNumber*alpha)
+        Ynew=linspace(YMin,YMax,self.gridNumber*alpha)
+        Znew=f(Xnew,Ynew)
+        [Xnew, Ynew] = meshgrid(Xnew, Ynew)
+        return Xnew, Ynew, Znew
+
+    def Plotting_Landscape(self,XMin,XMax,YMin,YMax):
         print('Model object called to Plotting_Landscape')
-        #Model.Calculate_PositionProb()
-        
-        print('self.gridNumber:',self.gridNumber)
-        # Plotting the landscape
-        fig=plt.figure()
-        ax=fig.gca(projection='3d')
+        print('self.gridNumber:', self.gridNumber)
 
-        # make data
-
-        #x=np.arange(0,4,0.04)
-        #y=np.arange(0,4,0.04)
-        #xx,yy=np.meshgrid(x,y,sparse=True)
-
-        #x=np.arange(fromInitialCondition[0,0],toInitialCondition[0,0],(toInitialCondition[0,0]-fromInitialCondition[0,0])/splitNumber-1)
-        #y=np.arange(fromInitialCondition[0,0],toInitialCondition[0,0],(toInitialCondition[0,0]-fromInitialCondition[0,0])/splitNumber)
-        x=linspace(self.fromInitialCondition[0,0],self.toInitialCondition[0,0],self.gridNumber)
-        y=x
-    
-    
-        xx,yy=np.meshgrid(x,y)
         # Normalized probability
+        self.PositionProb = self.PositionProb + np.ones(self.PositionProb.shape)
 
-        self.PositionProb=self.PositionProb+np.ones(self.PositionProb.shape)
-    
-        ProbT = self.PositionProb # [0:99,0:99]
-        normalized_ProbT = ProbT/(sum(sum(ProbT)))
+        ProbT = self.PositionProb  # [0:99,0:99]
+        normalized_ProbT = ProbT / (sum(sum(ProbT)))
         U = -np.log(normalized_ProbT)
-    
-    
-        xT=linspace(self.fromInitialCondition[0,0], self.toInitialCondition[0,0], self.gridNumber)
-        #xT=xt[0:-1]
-        yT=xT;
-        [X,Y]=meshgrid(xT,yT)    
-        surf=ax.plot_surface(X, Y, U, cmap='jet')
-    
-        #P=PositionProb/(sum(sum(PositionProb)))
-        #U=-np.log(P)
 
-        # Plot the surface
-        #surf=plt.contourf(xx,yy,U)
+        xT = linspace(XMin, XMax, self.gridNumber)
+        yT = linspace(YMin, YMax, self.gridNumber)
+        [X, Y] = meshgrid(xT, yT)
 
-        #surf=ax.plot_surface(xx, yy, U, cmap='jet')
+        # smoothing by interpolation, if need uncomment, if not need, comment this line
+        # X, Y, U=self.Interpolation_Landscape(xT,yT,U,XMin,XMax,YMin,YMax)
 
-        ax.set_xlabel(self.geneName[self.index_1])
-        ax.set_ylabel(self.geneName[self.index_2])
-        ax.set_zlabel('U = - ln(P)')
-        
         return X, Y, U
                   
 
@@ -3451,13 +3431,15 @@ class MCLapp(tk.Tk):
         self.master.wait_window(s)  # display the window and wait for it to close
 
 class ProgressWindow(simpledialog.Dialog):
-    def __init__(self, parent, name, lst):
+    def __init__(self, parent, name, lst,mode):
         ''' Init progress window '''
         print('ProgressWindow was called.')
         tk.Toplevel.__init__(self, master=parent)
         self.name = name
         self.lst = lst
         self.length = 550
+        self.mode = mode
+        self.pcaNewData = np.empty([0, len(model.geneName)])
         #
         self.create_window()
         self.create_widgets()
@@ -3526,81 +3508,110 @@ class ProgressWindow(simpledialog.Dialog):
             self.close()  # close window
 
     def do_something_with_file(self, number, name):
-        #print('do_something_with_file was called.')
-        
-        # updated: 18 Feb 2020
-        # to stop print time-course number in Python shell
-        #print("%d/%d" %(number-1, model.TrajectoryNumber))
-        model.loopNum=number
+        model.loopNum = number
 
-        rowspan=(model.toInitialCondition[0,model.index_1]-model.fromInitialCondition[0,model.index_1])/model.gridNumber
-        colspan=(model.toInitialCondition[0,model.index_2]-model.fromInitialCondition[0,model.index_2])/model.gridNumber
+        i = number - 1
+        eachInitCond = model.InitialConditions[i, :][:, None].T  # to ensure the same dimension of the matrix
 
-        i=number-1
-        eachInitCond=model.InitialConditions[i,:][:,None].T  # to ensure the same dimension of the matrix
-
-        # Get one trajectory time-course data        
+        # Get one trajectory time-course data
         if model.type == 'ode':
-            model.TimecourseData = simulate_time_course_for_PosProb(self,i)
-            
+            model.TimecourseData = simulate_time_course_for_PosProb(self, i)
+
         if model.type == 'SBML':
-            model.TimecourseData = sbml_simulate_time_course_for_PosProb(self,i)
-
+            model.TimecourseData = sbml_simulate_time_course_for_PosProb(self, i)
         # for loop for projecting one trajectory into the plane and calculate the probability distribution
-        for j in range(model.TimecourseData.shape[0]):
-                        
-            if (model.TimecourseData[j,model.index_1]-model.fromInitialCondition[0,model.index_1]) !=NaN:  
-                #print('j',j)
-                row=int(floor((model.TimecourseData[j,model.index_1]-model.fromInitialCondition[0,model.index_1])/rowspan))+1
-                #print(row)
-                col=int(floor((model.TimecourseData[j,model.index_2]-model.fromInitialCondition[0,model.index_2])/colspan))+1
-                #print(col)
-    
-                if (row >0 and row < model.gridNumber) and (col > 0 and col < model.gridNumber):
-                
-                            model.PositionProb[row,col]=model.PositionProb[row,col] + 1
-        number=number+1
+        XMin, XMax, YMin, YMax = 0, 0, 0, 0
+        if self.mode == "pca":  # do pca for each of trajectory
 
-        if number==model.TrajectoryNumber:
-            model.X, model.Y, model.Z=model.Plotting_Landscape()
-        
-            #        model.X = X
-            #        model.Y = Y
-            #        model.Z = Z
-        
-            Attractors= np.vstack({tuple(row) for row in model.TempAttractors})
+            self.pcaNewData = np.vstack((self.pcaNewData, model.TimecourseData))
+            if number == model.TrajectoryNumber:
+                pca = PCA(n_components=2)
+                pca.fit(self.pcaNewData)
+                newData = pca.transform(self.pcaNewData)
+                print("PCA variance ratio:", pca.explained_variance_ratio_)
+                XMin, XMax = min(newData[:, 0]), max(newData[:, 0])
+                YMin, YMax = min(newData[:, 1]), max(newData[:, 1])
+                # get union
+                XMin = min(XMin, model.fromInitialCondition[0, 0])
+                XMax = max(XMax, model.toInitialCondition[0, 0])
+                YMin = min(YMin, model.fromInitialCondition[0, 0])
+                YMax = max(YMax, model.toInitialCondition[0, 0])
+                rowspan = (XMax - XMin) / model.gridNumber
+                colspan = (YMax - YMin) / model.gridNumber
+                print(newData.shape)
+                for j in range(newData.shape[0]):  # for each sample get row and column position
+                    row = int(floor((newData[j, 0] - XMin) / rowspan)) + 1
+                    col = int(floor((newData[j, 1] - YMin) / colspan)) + 1
+                    if (row > 0 and row < model.gridNumber) and (col > 0 and col < model.gridNumber):
+                        model.PositionProb[row, col] += 1
+        else:  # default
+            rowspan = (model.toInitialCondition[0, model.index_1] - model.fromInitialCondition[
+                0, model.index_1]) / model.gridNumber
+            colspan = (model.toInitialCondition[0, model.index_2] - model.fromInitialCondition[
+                0, model.index_2]) / model.gridNumber
+            for j in range(model.TimecourseData.shape[0]):  # for each sample get row and column position
+
+                if (model.TimecourseData[j, model.index_1] - model.fromInitialCondition[0, model.index_1]) != NaN:
+                    # print('j',j)
+                    row = int(floor((model.TimecourseData[j, model.index_1] - model.fromInitialCondition[
+                        0, model.index_1]) / rowspan)) + 1
+                    # print(row)
+                    col = int(floor((model.TimecourseData[j, model.index_2] - model.fromInitialCondition[
+                        0, model.index_2]) / colspan)) + 1
+                    # print(col)
+
+                    if (row > 0 and row < model.gridNumber) and (col > 0 and col < model.gridNumber):
+                        model.PositionProb[row, col] += 1
+            XMin, XMax = model.fromInitialCondition[0, model.index_1], model.toInitialCondition[0, model.index_1]
+            YMin, YMax = model.fromInitialCondition[0, model.index_2], model.toInitialCondition[0, model.index_2]
+        number += 1
+
+        if number == model.TrajectoryNumber + 1:
+            model.X, model.Y, model.Z = model.Plotting_Landscape(XMin, XMax, YMin, YMax)
+
+            Attractors = np.vstack({tuple(row) for row in model.TempAttractors})
             model.Attractors = Attractors
             print('Number of attractors=', len(Attractors))
             print('Attractors:')
             print(Attractors)
- 
+
             # Plot 3D graph
-         
+
             # to plot 3D view into f GraphPage
-            f.clear()
-       
+            f.clear()  # clear first of all
+            f.add_subplot(111, projection='3d')
+            f.canvas.draw_idle()
+
             a = f.add_subplot(111, projection='3d')
-            a.plot_surface(model.X, model.Y, model.Z, cmap = 'jet') 
-            #print(model.index_1)
-            a.set_xlabel(str(model.geneName[model.index_2]))
-            a.set_ylabel(str(model.geneName[model.index_1]))
-            #a.set_ylabel('y')
+            a.plot_surface(model.X, model.Y, model.Z, cmap='jet')
+
+            if self.mode == "pca":
+                a.set_xlabel("PC 1")
+                a.set_ylabel("PC 2")
+            else:
+                a.set_xlabel(str(model.geneName[model.index_2]))
+                a.set_ylabel(str(model.geneName[model.index_1]))
+            # a.set_ylabel('y')
             a.set_zlabel("U")
             f.canvas.draw_idle()
-       
+
             # to plot top view into f4 GraphPage2
-       
+
             a4 = f4.add_subplot(111, projection='3d')
-            a4.plot_surface(model.X, model.Y, model.Z, cmap = 'jet') 
+            a4.plot_surface(model.X, model.Y, model.Z, cmap='jet')
             # add contour to the 3D surface plot
-            #a.contour(X, Y, Z, zdir='z', offset=0, cmap='jet')
-            #print(model.index_1)
-            a4.set_xlabel(str(model.geneName[model.index_2]))
-            a4.set_ylabel(str(model.geneName[model.index_1]))
-            #a.set_ylabel('y')
-            a4.set_zlabel("U")    
+            # a.contour(X, Y, Z, zdir='z', offset=0, cmap='jet')
+            # print(model.index_1)
+            if self.mode == "pca":
+                a4.set_xlabel("PC 1")
+                a4.set_ylabel("PC 2")
+            else:
+                a4.set_xlabel(str(model.geneName[model.index_2]))
+                a4.set_ylabel(str(model.geneName[model.index_1]))
+            # a.set_ylabel('y')
+            a4.set_zlabel("U")
             a4.view_init(elev=90, azim=-90)
-            f4.canvas.draw_idle()       
+            f4.canvas.draw_idle()
 
 
     def close(self, event=None):
@@ -6225,21 +6236,12 @@ class Graph_Page(tk.Frame):
         
         
         # User control buttons
-        #self.buttonPlot = ttk.Button(self, text="Calculate Potential U and Plot Landscape", command = self.calculate_potential_U)
-        #self.buttonPlot.pack(side="left", padx=5, pady=5)
-        b = ttk.Button(self, text='Calculate Potential U and Plot Landscape', command=self.start_progress)
-        b.pack()
-        b.focus_set()         
-        # original is using this for binding the buttonPlot to calculate_potential_U
-        #buttonPlot.bind("<Button>", calculate_potential_U)
-        
-        #buttonPlot = ttk.Button(self, text="Plot Landscape")
-        #buttonPlot.pack(side="left", padx=5, pady=5)
-        #buttonPlot.bind("<Button>", plot_3D_graph)
-        
-        #buttonTopView = ttk.Button(self, text="Top View")
-        #buttonTopView.pack(side="left", padx=5, pady=5)
-        #buttonTopView.bind("<Button>", Plot_TopView)
+        b = ttk.Button(self, text='Plot Landscape (default)', command=lambda:self.start_progress("default"))
+        b.pack(side="top",padx=20, pady=10)
+        b.focus_set()
+        bpca = ttk.Button(self, text='Plot Landscape (PCA)', command=lambda:self.start_progress("pca"))
+        bpca.pack(side="top",padx=20, pady=10)
+        bpca.focus_set()
         
         buttonColorbar = ttk.Button(self, text="Color Bar", command= lambda: colorbar())
         buttonColorbar.pack(side="left", padx=5, pady=5)    
@@ -6392,14 +6394,15 @@ class Graph_Page(tk.Frame):
         
         self.update()    
 
-    def start_progress(self):
+    def start_progress(self,mode):
         ''' Open modal window '''
         print('start_progress was called.')
         if model.name=='':
             tk.messagebox.showinfo("No model equation found.","Please load a model equation first.")
         else:            
             model.loopNum=1
-            s = ProgressWindow(self, 'MyTest', self.lst)  # create progress window
+            model.PositionProb = np.zeros((model.gridNumber, model.gridNumber)) # initialization every call this func
+            s = ProgressWindow(self, 'MyTest', self.lst,mode)  # create progress window
             self.master.wait_window(s)  # display the window and wait for it to close
 
 class Graph_Page2(tk.Frame):
