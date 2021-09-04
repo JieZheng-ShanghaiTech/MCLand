@@ -1,0 +1,27 @@
+name: py36
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - conda-forge
+  - defaults
+dependencies:
+  - blas=1.0=mkl
+  - certifi=2020.6.20=py36_0
+  - icc_rt=2019.0.0=h0cc432a_1
+  - intel-openmp=2019.4=245
+  - mkl=2017.0.4=h6d528fc_0
+  - numpy=1.11.3=py36h4a99626_4
+  - pip=20.0.2=py36_1
+  - python=3.6.10=h9f7ef89_0
+  - scikit-learn=0.18.1=np111py36_1
+  - scipy=0.18.1=np111py36_1
+  - setuptools=45.2.0=py36_0
+  - sqlite=3.31.1=he774522_0
+  - vc=14.1=h0510ff6_4
+  - vs2015_runtime=14.16.27012=hf0eaf9b_1
+  - wheel=0.34.2=py36_0
+  - wincertstore=0.2=py36h7fe50ca_0
+  - pip:
+    - pillow==7.0.0
+    - python-libsbml==5.18.0
+prefix: D:\python\anaconda\envs\py36

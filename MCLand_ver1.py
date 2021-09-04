@@ -285,7 +285,7 @@ class Model():
         # X, Y, U=self.Interpolation_Landscape(xT,yT,U,XMin,XMax,YMin,YMax)
 
         # smoothing by average U, if need uncomment, if not need, comment this line
-        U=self.AverageU(U,size=4,stride=1)
+        # U=self.AverageU(U,size=4,stride=1)
 
         return X, Y, U
                   
@@ -3598,7 +3598,7 @@ class ProgressWindow(simpledialog.Dialog):
             f.canvas.draw_idle()
 
             a = f.add_subplot(111, projection='3d')
-            a.plot_surface(model.X, model.Y, model.Z, cmap='jet')
+            a.plot_surface(model.X, model.Y, model.Z, cmap='jet',linewidth=0.2,antialiased=True,edgecolor='Gray')
 
             if self.mode == "pca":
                 a.set_xlabel("PC 1")
@@ -3613,7 +3613,7 @@ class ProgressWindow(simpledialog.Dialog):
             # to plot top view into f4 GraphPage2
 
             a4 = f4.add_subplot(111, projection='3d')
-            a4.plot_surface(model.X, model.Y, model.Z, cmap='jet')
+            a4.plot_surface(model.X, model.Y, model.Z, cmap='jet',linewidth=0.2,antialiased=True,edgecolor='Gray')
             # add contour to the 3D surface plot
             # a.contour(X, Y, Z, zdir='z', offset=0, cmap='jet')
             # print(model.index_1)
@@ -6252,10 +6252,10 @@ class Graph_Page(tk.Frame):
         
         # User control buttons
         b = ttk.Button(self, text='Plot Landscape (default)', command=lambda:self.start_progress("default"))
-        b.pack(side="top",padx=20, pady=10)
+        b.pack(side="left",padx=20, pady=10)
         b.focus_set()
         bpca = ttk.Button(self, text='Plot Landscape (PCA)', command=lambda:self.start_progress("pca"))
-        bpca.pack(side="top",padx=20, pady=10)
+        bpca.pack(side="left",padx=20, pady=10)
         bpca.focus_set()
         
         buttonColorbar = ttk.Button(self, text="Color Bar", command= lambda: colorbar())
